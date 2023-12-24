@@ -1,5 +1,7 @@
 using FukLinux;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +10,11 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddHealthChecks()
     .AddCheck("Sample", () => HealthCheckResult.Healthy("A healthy result."));
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.KnownProxies.Add(IPAddress.Parse("10.0.0.100"));
+});
 
 var app = builder.Build();
 
@@ -19,7 +26,13 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+//app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
